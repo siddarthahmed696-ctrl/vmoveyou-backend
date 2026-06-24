@@ -1,4 +1,5 @@
 {
+  {
   "name": "vmoveyou-backend",
   "version": "1.0.0",
   "description": "V Move You backend for Hostinger (Node.js + MySQL)",
@@ -9,14 +10,16 @@
     "init-db": "node scripts/init-db.js",
     "create-admin": "node scripts/create-admin.js"
   },
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": "18.x"
+  },
   "dependencies": {
     "express": "^4.19.2",
     "cors": "^2.8.5",
     "mysql2": "^3.11.0",
     "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.2",
-    "multer": "^1.4.5-lts.1",
+    "multer": "^2.0.2",
     "dotenv": "^16.4.5",
     "express-rate-limit": "^7.4.0"
   }
