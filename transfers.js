@@ -8,10 +8,10 @@ const { pool } = require("./db");
 
 const router = express.Router();
 
-const MAX_MB = Number(process.env.MAX_UPLOAD_MB || 100);
+const MAX_MB = Number(process.env.MAX_UPLOAD_MB || 800);
 const MAX_BYTES = MAX_MB * 1024 * 1024;
-const EXPIRY_DAYS = Number(process.env.TRANSFER_EXPIRY_DAYS || 7);
-const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, "..", "uploads");
+const EXPIRY_DAYS = Number(process.env.TRANSFER_EXPIRY_DAYS || 3);
+const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, "uploads");
 
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
