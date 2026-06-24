@@ -1,7 +1,7 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const rateLimit = require("express-rate-limit");
-const { pool } = require("../db");
+const { pool } = require("./db");
 const { signAdminToken, requireAdmin } = require("../auth");
 
 const router = express.Router();
