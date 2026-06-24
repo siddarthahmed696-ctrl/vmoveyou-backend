@@ -4,7 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const multer = require("multer");
 const rateLimit = require("express-rate-limit");
-const { pool } = require("../db");
+const { pool } = require("./db");
 
 const router = express.Router();
 
