@@ -3,8 +3,8 @@ const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const multer = require("multer");
-const { pool } = require("./db");
-const { requireAdmin } = require("./auth");
+const { pool } = require("../db");
+const { requireAdmin } = require("../auth");
 
 const router = express.Router();
 
