@@ -256,7 +256,7 @@ router.post(
 );
 
 // ── Public lookup by share code
-router.get(
+router.get("/public/download/:code/:fileId", ...)
   "/by-code/:code",
   asyncHandler(async (req, res) => {
     const code = req.params.code;
