@@ -1,56 +1,103 @@
+require("dotenv").config();
+
 const express = require("express");
 const path = require("path");
-const fs = require("fs");
+
+const corsMiddleware = require("./middleware/cors");
+const errorHandler = require("./middleware/errorHandler");
+const { UPLOAD_DIR, ADS_DIR } = require("./config/storage");
 
 const app = express();
 
+/**
+ * Hostinger / proxy support
+ * Important for rate-limit, IP, HTTPS proxy
+ */
 app.set("trust proxy", 1);
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, "uploads");
-const ADS_DIR = path.join(UPLOAD_DIR, "ads");
+/**
+ * CORS must come before all routes
+ */
+app.use(corsMiddleware);
 
-if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-if (!fs.existsSync(ADS_DIR)) fs.mkdirSync(ADS_DIR, { recursive: true });
+/**
+ * Body parser
+ */
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-app.use("/files/ads", express.static(ADS_DIR, { maxAge: "7d", immutable: false }));
-
+/**
+ * Health check
+ */
 app.get("/health", (_req, res) => {
   res.status(200).json({
     ok: true,
+    service: "vmoveyou-backend",
     time: new Date().toISOString(),
   });
 });
 
-function mountRoute(routePath, basePath) {
-  try {
-    const router = require(routePath);
-    app.use(basePath, router);
-    console.log(`Loaded route: ${basePath}`);
-  } catch (err) {
-    console.error(`Failed to load route ${basePath}:`, err.stack || err.message);
-    process.exit(1);
-  }
-}
+/**
+ * Optional: check upload directory from browser
+ * Isse pata chalega server uploads folder access kar pa raha hai ya nahi
+ */
+app.get("/api/storage-check", (_req, res) => {
+  const fs = require("fs");
 
-mountRoute("./admin-auth", "/api/admin");
-mountRoute("./ads", "/api/ads");
-mountRoute("./transfers", "/api/transfers");
-mountRoute("./visitors", "/api/visitors");
+  res.json({
+    ok: true,
+    uploadDir: UPLOAD_DIR,
+    uploadDirExists: fs.existsSync(UPLOAD_DIR),
+    adsDir: ADS_DIR,
+    adsDirExists: fs.existsSync(ADS_DIR),
+  });
+});
 
+/**
+ * Static ad files
+ */
+app.use(
+  "/files/ads",
+  express.static(ADS_DIR, {
+    maxAge: "7d",
+    immutable: false,
+  })
+);
+
+/**
+ * API routes
+ * Ye path important hai:
+ * Download URL should look like:
+ * /api/transfers/by-code/:code/file/:fileId
+ */
+app.use("/api/transfers", require("./routes/transfers"));
+app.use("/api/ads", require("./routes/ads"));
+app.use("/api/visitors", require("./routes/visitors"));
+app.use("/api/admin", require("./routes/admin"));
+
+/**
+ * 404 handler
+ */
 app.use((req, res) => {
-  res.status(404).json({ error: "Not found" });
+  res.status(404).json({
+    error: "Route not found",
+    method: req.method,
+    path: req.originalUrl,
+  });
 });
 
-app.use((err, _req, res, _next) => {
-  console.error(err);
-  if (res.headersSent) return;
-  res.status(err.status || 500).json({ error: err.message || "Server error" });
-});
+/**
+ * Error handler should be last
+ */
+app.use(errorHandler);
 
-const port = Number(process.env.PORT || 3000);
+/**
+ * Hostinger usually provides process.env.PORT.
+ * Do not hardcode only 3000.
+ */
+const PORT = Number(process.env.PORT || 3000);
 
-app.listen(port, "0.0.0.0", () => {
-  console.log(`V Move You backend running on :${port}`);
+app.listen(PORT, () => {
+  console.log(`V Move You backend running on port ${PORT}`);
+  console.log(`Upload directory: ${UPLOAD_DIR}`);
 });
