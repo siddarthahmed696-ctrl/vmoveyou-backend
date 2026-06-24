@@ -1,47 +1,34 @@
+require("dotenv").config();
 const express = require("express");
+const cors = require("cors");
 const path = require("path");
 const fs = require("fs");
 
 const app = express();
 
-app.set("trust proxy", 1);
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+const origins = (process.env.CORS_ORIGIN || "").split(",").map((s) => s.trim()).filter(Boolean);
+app.use(cors({
+  origin: (origin, cb) => {
+    if (!origin) return cb(null, true);
+    if (origins.length === 0 || origins.includes(origin)) return cb(null, true);
+    return cb(new Error("CORS blocked"));
+  },
+  credentials: false,
+}));
 
+app.use(express.json({ limit: "1mb" }));
+
+// Static serving for ad images (kept under /files/ads/*)
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, "uploads");
-const ADS_DIR = path.join(UPLOAD_DIR, "ads");
-
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-if (!fs.existsSync(ADS_DIR)) fs.mkdirSync(ADS_DIR, { recursive: true });
+app.use("/files/ads", express.static(path.join(UPLOAD_DIR, "ads"), { maxAge: "7d", immutable: false }));
 
-app.use("/files/ads", express.static(ADS_DIR, { maxAge: "7d", immutable: false }));
+app.get("/health", (_req, res) => res.json({ ok: true, time: new Date().toISOString() }));
 
-app.get("/health", (_req, res) => {
-  res.status(200).json({
-    ok: true,
-    time: new Date().toISOString(),
-  });
-});
-
-function mountRoute(routePath, basePath) {
-  try {
-    const router = require(routePath);
-    app.use(basePath, router);
-    console.log(`Loaded route: ${basePath}`);
-  } catch (err) {
-    console.error(`Failed to load route ${basePath}:`, err.stack || err.message);
-    process.exit(1);
-  }
-}
-
-mountRoute("./admin-auth", "/api/admin");
-mountRoute("./ads", "/api/ads");
-mountRoute("./transfers", "/api/transfers");
-mountRoute("./visitors", "/api/visitors");
-
-app.use((req, res) => {
-  res.status(404).json({ error: "Not found" });
-});
+app.use("/api/admin", require("./routes/admin-auth"));
+app.use("/api/ads", require("./routes/ads"));
+app.use("/api/transfers", require("./routes/transfers"));
+app.use("/api/visitors", require("./routes/visitors"));
 
 app.use((err, _req, res, _next) => {
   console.error(err);
@@ -50,7 +37,4 @@ app.use((err, _req, res, _next) => {
 });
 
 const port = Number(process.env.PORT || 3000);
-
-app.listen(port, "0.0.0.0", () => {
-  console.log(`V Move You backend running on :${port}`);
-});
+app.listen(port, () => console.log(`V Move You backend running on :${port}`));
