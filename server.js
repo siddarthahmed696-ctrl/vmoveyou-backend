@@ -34,10 +34,10 @@ function mountRoute(routePath, basePath) {
   }
 }
 
-mountRoute("./routes/admin-auth", "/api/admin");
-mountRoute("./routes/ads", "/api/ads");
-mountRoute("./routes/transfers", "/api/transfers");
-mountRoute("./routes/visitors", "/api/visitors");
+mountRoute("./admin-auth", "/api/admin");
+mountRoute("./ads", "/api/ads");
+mountRoute("./transfers", "/api/transfers");
+mountRoute("./visitors", "/api/visitors");
 
 app.use((req, res) => {
   res.status(404).json({ error: "Not found" });
